@@ -1,7 +1,7 @@
 import requests
 from django.shortcuts import render
 
-DEFOG_API_KEY = "759f5701f02bd85095b3a7de15ea6cec91e703e18d6868a0c728d0d09130f6c1"
+DEFOG_API_KEY = "your key"
 DEFOG_URL = "https://api.defog.ai/generate_query_chat"  # example
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
