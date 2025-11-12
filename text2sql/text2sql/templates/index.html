@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text2SQL Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .table-input { margin-bottom: 20px; }
+        .column { display: flex; gap: 10px; margin-bottom: 10px; }
+        button { padding: 10px; background: #007bff; color: white; border: none; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; background: #f0f0f0; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>Text2SQL Generator</h1>
+    <p>Define your tables and columns, then enter a natural language request to generate SQL.</p>
+
+    <div id="tables">
+        <h3>Tables</h3>
+        <button onclick="addTable()">Add Table</button>
+    </div>
+
+    <div class="table-input">
+        <label for="request">Natural Language Request:</label><br>
+        <input type="text" id="request" placeholder="e.g., Show all users with their orders" style="width: 100%; padding: 10px;">
+    </div>
+
+    <button onclick="generateSQL()">Generate SQL</button>
+
+    <div id="result"></div>
+
+    <script>
+        let tableCount = 0;
+
+        function addTable() {
+            tableCount++;
+            const tablesDiv = document.getElementById('tables');
+            const tableDiv = document.createElement('div');
+            tableDiv.id = `table-${tableCount}`;
+            tableDiv.innerHTML = `
+                <h4>Table ${tableCount}</h4>
+                <label>Table Name: <input type="text" id="table-name-${tableCount}"></label><br>
+                <div id="columns-${tableCount}">
+                    <button onclick="addColumn(${tableCount})">Add Column</button>
+                </div>
+                <button onclick="removeTable(${tableCount})">Remove Table</button>
+            `;
+            tablesDiv.appendChild(tableDiv);
+        }
+
+        function addColumn(tableId) {
+            const columnsDiv = document.getElementById(`columns-${tableId}`);
+            const columnDiv = document.createElement('div');
+            columnDiv.className = 'column';
+            columnDiv.innerHTML = `
+                <label>Name: <input type="text" class="col-name"></label>
+                <label>Type: <select class="col-type">
+                    <option value="INT">INT</option>
+                    <option value="VARCHAR">VARCHAR</option>
+                    <option value="FLOAT">FLOAT</option>
+                    <option value="DATE">DATE</option>
+                </select></label>
+                <button onclick="this.parentElement.remove()">Remove</button>
+            `;
+            columnsDiv.appendChild(columnDiv);
+        }
+
+        function removeTable(tableId) {
+            document.getElementById(`table-${tableId}`).remove();
+        }
+
+        async function generateSQL() {
+            console.log('generateSQL() called');  // Debug: Confirm function runs
+
+            const schema = [];
+            for (let i = 1; i <= tableCount; i++) {
+                const tableDiv = document.getElementById(`table-${i}`);
+                if (!tableDiv) continue;
+                const tableName = document.getElementById(`table-name-${i}`).value;
+                const columns = [];
+                tableDiv.querySelectorAll('.column').forEach(col => {
+                    const name = col.querySelector('.col-name').value;
+                    const type = col.querySelector('.col-type').value;
+                    if (name) columns.push({ name, type });
+                });
+                if (tableName && columns.length) schema.push({ table: tableName, columns });
+            }
+
+            const request = document.getElementById('request').value;
+            console.log('Schema built:', schema);  // Debug: Check schema data
+            console.log('Request:', request);       // Debug: Check request
+
+            if (!schema.length || !request) {
+                console.log('Early return: Schema or request empty');  // Debug: Why it returns
+                document.getElementById('result').innerText = 'Please define at least one table and enter a request.';
+                return;
+            }
+
+            try {
+                console.log('Sending POST to /api/generate_sql/');  // Debug: Fetch starts
+                const response = await fetch('/api/generate_sql/', {  // Changed to relative URL
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schema, request })
+                });
+
+                console.log('Response status:', response.status);  // Debug: HTTP status
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Response data:', data);  // Debug: Full response
+                document.getElementById('result').innerText = data.sql || 'Error generating SQL.';
+            } catch (error) {
+                console.error('Fetch error:', error);  // Debug: Any errors
+                document.getElementById('result').innerText = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

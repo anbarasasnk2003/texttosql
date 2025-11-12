@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dynamic SQL Table Input</title>
+  <style>
+    body { font-family: Arial; margin: 30px; background: #fafafa; }
+    input, button, select { padding: 6px; margin: 5px 0; }
+    .table-block { border: 1px solid #ccc; border-radius: 10px; padding: 15px; margin-top: 15px; background: #fff; box-shadow: 0 0 8px rgba(0,0,0,0.1); }
+    h2, h3 { color: #333; }
+    label { font-weight: bold; }
+    pre { background: #eee; padding: 10px; border-radius: 5px; white-space: pre-wrap; }
+    .error { color: red; }
+  </style>
+</head>
+<body>
+
+<h2>Enter Table and Column Details</h2>
+
+<form method="POST">
+  {% csrf_token %}
+
+  <label>Number of Tables:</label>
+  <input type="number" name="num_tables" id="num_tables" min="1" value="1"><br><br>
+
+  <div id="tables-container"></div>
+
+  <label>Question:</label>
+  <input type="text" name="question" placeholder="Type your SQL-related question" style="width:400px;" required><br><br>
+
+  <button type="submit">Generate SQL</button>
+</form>
+
+{% if error_message %}
+  <p class="error">{{ error_message }}</p>
+{% endif %}
+
+{% if sql_query %}
+  <h3>Generated SQL Query:</h3>
+  <pre>{{ sql_query }}</pre>
+{% endif %}
+
+<script>
+const container = document.getElementById("tables-container");
+const numTablesInput = document.getElementById("num_tables");
+
+function generateTables() {
+  container.innerHTML = "";
+  const numTables = parseInt(numTablesInput.value) || 1;
+
+  for (let i = 1; i <= numTables; i++) {
+    const tableDiv = document.createElement("div");
+    tableDiv.classList.add("table-block");
+
+    tableDiv.innerHTML = `
+      <h3>Table ${i}</h3>
+      <label>Table Name:</label>
+      <input type="text" name="table_name_${i}" placeholder="Table name" value="Table${i}" required><br><br>
+
+      <label>Number of Columns:</label>
+      <input type="number" name="num_columns_${i}" id="num_columns_${i}" min="1" value="1"><br><br>
+
+      <div id="columns_container_${i}"></div>
+    `;
+    container.appendChild(tableDiv);
+
+    const numColumnsInput = tableDiv.querySelector(`#num_columns_${i}`);
+    const columnsContainer = tableDiv.querySelector(`#columns_container_${i}`);
+
+    function generateColumns() {
+      columnsContainer.innerHTML = "";
+      const numCols = parseInt(numColumnsInput.value) || 1;
+      for (let j = 1; j <= numCols; j++) {
+        columnsContainer.innerHTML += `
+          <div style="margin-bottom: 10px; padding: 10px; border-bottom: 1px solid #ddd;">
+            <label>Column ${j} Name:</label>
+            <input type="text" name="column_${i}_${j}" placeholder="e.g. student_name" required>
+
+            <label>Type:</label>
+            <select name="column_type_${i}_${j}">
+              <option value="INT">INT</option>
+              <option value="VARCHAR(255)">VARCHAR(255)</option>
+              <option value="TEXT">TEXT</option>
+              <option value="DATE">DATE</option>
+              <option value="BOOLEAN">BOOLEAN</option>
+              <option value="FLOAT">FLOAT</option>
+            </select>
+          </div>
+        `;
+      }
+    }
+
+    generateColumns();
+    numColumnsInput.addEventListener("change", generateColumns);
+  }
+}
+
+generateTables();
+numTablesInput.addEventListener("change", generateTables);
+</script>
+
+</body>
+</html>
